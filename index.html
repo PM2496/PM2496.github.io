@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>PM2496 · 个人博客</title>
+  <meta name="description" content="PM2496，一个把技术、阅读与日常写下来的个人博客。">
+  <meta property="og:title" content="PM2496 · 个人博客">
+  <meta property="og:description" content="把想法写下来，让时间慢一点。">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script>
+    (function () {
+      var resolved = 'light';
+      try {
+        var saved = JSON.parse(localStorage.getItem('yubai.blog.v1') || 'null');
+        var pref = saved && saved.ui && saved.ui.theme ? saved.ui.theme : 'system';
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        resolved = dark ? 'dark' : 'light';
+      } catch (error) {}
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.style.colorScheme = resolved;
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#contentScroll">跳到文章内容</a>
+
+  <svg class="svg-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"></path></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path d="M8 5v14M5 16l3 3 3-3M16 19V5M13 8l3-3 3 3"></path></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5z"></path></symbol>
+    <symbol id="i-folder-plus" viewBox="0 0 24 24"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l2 2h6a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5z"></path><path d="M12 10.5v5M9.5 13h5"></path></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"></circle></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M13.5 6.5 17.5 10.5M4.5 19.5l4.8-1 9.7-9.7a2.1 2.1 0 0 0-3-3l-9.7 9.7z"></path></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7.5h15M9 7.5V5.8c0-.7.6-1.3 1.3-1.3h3.4c.7 0 1.3.6 1.3 1.3v1.7M7 7.5l.8 11.2c0 .7.6 1.3 1.3 1.3h5.8c.7 0 1.3-.6 1.3-1.3L17 7.5M10 11v5M14 11v5"></path></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.4A8 8 0 0 1 9.6 4 8 8 0 1 0 20 14.4z"></path></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16.5V20"></path></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"></rect><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17"></path></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="m3.8 12.4 8.6-8.6h6.3a1 1 0 0 1 1 1v6.3l-8.6 8.6a1.5 1.5 0 0 1-2.1 0l-5.2-5.2a1.5 1.5 0 0 1 0-2.1z"></path><circle cx="15.8" cy="8.2" r="1.2"></circle></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"></path></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></symbol>
+    <symbol id="i-panel-left" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"></rect><path d="M9 4.5v15"></path></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-8A2.5 2.5 0 0 0 3 6.5v8A2.5 2.5 0 0 0 5.5 17H8"></path></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="18.5" r="2.5"></circle><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"></path></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 19.5h14"></path></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M8 9l4-4 4 4M5 19.5h14"></path></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 10a8 8 0 1 1 2 7.5M4.5 4.5V10H10"></path></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 11 13M9 5H5.5A1.5 1.5 0 0 0 4 6.5v12A1.5 1.5 0 0 0 5.5 20h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M9.5 7.5H5.8A1.8 1.8 0 0 0 4 9.3v4.2c0 1 .8 1.8 1.8 1.8h2.4v1.2c0 1.4-1 2.3-2.4 2.5M19.5 7.5h-3.7a1.8 1.8 0 0 0-1.8 1.8v4.2c0 1 .8 1.8 1.8 1.8h2.4v1.2c0 1.4-1 2.3-2.4 2.5"></path></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3.5h7l5 5v12H6z"></path><path d="M13 3.5v5h5M9 13h6M9 16.5h4.5"></path></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5zM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"></path></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5c.5 4.5 2 6 6.5 6.5-4.5.5-6 2-6.5 6.5-.5-4.5-2-6-6.5-6.5 4.5-.5 6-2 6.5-6.5zM18.5 15.5c.2 2.1.9 2.8 3 3-2.1.2-2.8.9-3 3-.2-2.1-.9-2.8-3-3 2.1-.2 2.8-.9 3-3z"></path></symbol>
+    <symbol id="i-fish" viewBox="0 0 24 24"><path d="M4 12s3.2-5 8-5c3 0 5.1 2.2 6.3 5-1.2 2.8-3.3 5-6.3 5-4.8 0-8-5-8-5z"></path><path d="M18.3 12c1.1-.8 1.7-1.7 2.2-3 .2 2.1.2 3.9 0 6-.5-1.3-1.1-2.2-2.2-3z"></path><circle cx="9" cy="11.1" r=".8" fill="currentColor" stroke="none"></circle></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"></path></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.8 12S6 6.5 12 6.5 21.2 12 21.2 12 18 17.5 12 17.5 2.8 12 2.8 12z"></path><circle cx="12" cy="12" r="2.7"></circle></symbol>
+    <symbol id="i-command" viewBox="0 0 24 24"><path d="M9 6.5a2.5 2.5 0 1 0-2.5 2.5H17a2.5 2.5 0 1 0-2.5-2.5v11a2.5 2.5 0 1 0 2.5-2.5H7A2.5 2.5 0 1 0 9 17.5z"></path></symbol>
+  </svg>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="博客导航">
+      <div class="brand-row">
+        <button class="brand" id="brandHome" type="button" title="回到最近的文章">
+          <span class="brand-mark" aria-hidden="true">余</span>
+          <span class="brand-copy">
+            <span class="brand-name">PM2496</span>
+            <span class="brand-sub">WORDS IN MARGIN</span>
+          </span>
+        </button>
+        <button class="icon-btn brand-collapse" id="collapseSidebarBtn" type="button" aria-label="收起侧栏" title="收起侧栏">
+          <svg><use href="#i-panel-left"></use></svg>
+        </button>
+      </div>
+
+      <button class="new-article-btn" id="newArticleBtn" type="button">
+        <svg aria-hidden="true"><use href="#i-edit"></use></svg>
+        <span>写一篇文章</span>
+        <kbd>N</kbd>
+      </button>
+
+      <div class="sidebar-heading">
+        <span>文章分类</span>
+        <div class="heading-actions">
+          <span class="heading-count" id="articleCount">0 篇</span>
+          <button class="icon-btn small" id="newCategoryBtn" type="button" aria-label="新建文章分类" title="新建文章分类">
+            <svg><use href="#i-folder-plus"></use></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-toolbar">
+        <label class="search-field" id="searchField" for="searchInput">
+          <svg class="search-icon" aria-hidden="true"><use href="#i-search"></use></svg>
+          <input id="searchInput" type="search" placeholder="搜索文章…" autocomplete="off" spellcheck="false" aria-label="搜索文章">
+          <button class="search-clear" id="clearSearchBtn" type="button" aria-label="清除搜索" hidden>
+            <svg><use href="#i-x"></use></svg>
+          </button>
+          <kbd class="search-kbd">/</kbd>
+        </label>
+        <button class="icon-btn tool-btn" id="filterBtn" type="button" aria-label="筛选文章" title="筛选文章" aria-haspopup="menu" aria-expanded="false">
+          <svg><use href="#i-filter"></use></svg>
+          <span class="tool-badge" id="filterBadge" hidden></span>
+        </button>
+        <button class="icon-btn tool-btn" id="sortBtn" type="button" aria-label="排序文章" title="排序文章" aria-haspopup="menu" aria-expanded="false">
+          <svg><use href="#i-sort"></use></svg>
+        </button>
+      </div>
+
+      <div class="filter-note" id="filterNote" hidden></div>
+
+      <nav class="category-scroll" id="categoryScroll" aria-label="文章分类列表">
+        <div class="category-tree" id="categoryTree"></div>
+        <div class="sidebar-fade" aria-hidden="true"></div>
+      </nav>
+
+      <div class="sidebar-foot">
+        <button class="theme-quick" id="themeQuickBtn" type="button" aria-label="切换主题" title="切换主题">
+          <svg class="theme-icon-sun" aria-hidden="true"><use href="#i-sun"></use></svg>
+          <svg class="theme-icon-moon" aria-hidden="true"><use href="#i-moon"></use></svg>
+        </button>
+        <button class="author-card" id="authorBtn" type="button" aria-haspopup="menu" aria-expanded="false" title="博客与数据设置">
+          <span class="author-avatar" aria-hidden="true">林</span>
+          <span class="author-copy">
+            <strong>林白</strong>
+            <span>写作者 · 杭州</span>
+          </span>
+          <svg class="author-more" aria-hidden="true"><use href="#i-more"></use></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-scrim" id="sidebarScrim" hidden></div>
+
+    <main class="main" id="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn nav-toggle" id="navToggle" type="button" aria-label="打开侧栏" title="打开侧栏" aria-expanded="false">
+            <svg><use href="#i-menu"></use></svg>
+          </button>
+          <nav class="breadcrumbs" id="breadcrumbs" aria-label="面包屑导航"></nav>
+        </div>
+        <div class="topbar-actions">
+          <span class="reading-chip" id="readingChip"></span>
+          <button class="ghost-btn edit-btn" id="editArticleBtn" type="button">
+            <svg aria-hidden="true"><use href="#i-edit"></use></svg>
+            <span>编辑</span>
+          </button>
+          <button class="icon-btn" id="shareArticleBtn" type="button" aria-label="复制文章链接" title="复制文章链接">
+            <svg><use href="#i-share"></use></svg>
+          </button>
+          <button class="icon-btn" id="articleMenuBtn" type="button" aria-label="更多文章操作" title="更多操作" aria-haspopup="menu" aria-expanded="false">
+            <svg><use href="#i-more"></use></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="reading-track" aria-hidden="true"><div class="reading-track-bar" id="readingBar"></div></div>
+
+      <section class="content-scroll" id="contentScroll" tabindex="-1">
+        <div class="article-stage" id="articleStage">
+          <div class="article-skeleton" aria-hidden="true">
+            <div class="skeleton-bubble"></div>
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-lines">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+        <div class="scroll-end-space" aria-hidden="true"></div>
+      </section>
+
+      <div class="reader-dock-wrap" id="readerDockWrap">
+        <div class="reader-dock" role="navigation" aria-label="文章导航">
+          <button class="dock-nav" id="prevArticleBtn" type="button">
+            <svg aria-hidden="true"><use href="#i-arrow-left"></use></svg>
+            <span>上一篇</span>
+          </button>
+          <div class="dock-progress">
+            <span id="dockPosition">01 / 01</span>
+            <div class="dock-track" aria-hidden="true"><i id="dockBar"></i></div>
+          </div>
+          <button class="dock-nav dock-next" id="nextArticleBtn" type="button">
+            <span>下一篇</span>
+            <svg aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="menuRoot" class="menu-root"></div>
+  <div id="modalRoot" class="modal-root"></div>
+  <div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+  <input id="importFile" type="file" accept="application/json,.json" aria-label="导入博客备份" hidden>
+
+  <noscript>
+    <div class="noscript-card">这个博客需要 JavaScript 才能呈现文章与交互。请启用 JavaScript 后重新打开。</div>
+  </noscript>
+
+  <script src="assets/data.js" defer></script>
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
