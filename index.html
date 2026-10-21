@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>PM2496 · 个人博客</title>
-  <meta name="description" content="PM2496，一个把技术、阅读与日常写下来的个人博客。">
-  <meta property="og:title" content="PM2496 · 个人博客">
+  <title>个人博客</title>
+  <meta name="author" content="">
+  <meta name="description" content="一个把技术、阅读与日常写下来的个人博客。">
+  <meta property="og:title" content="个人博客">
   <meta property="og:description" content="把想法写下来，让时间慢一点。">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -15,7 +16,17 @@
     (function () {
       var resolved = 'light';
       try {
-        var saved = JSON.parse(localStorage.getItem('yubai.blog.v1') || 'null');
+        var raw = localStorage.getItem('blog.content.v1');
+        if (!raw) {
+          for (var i = 0; i < localStorage.length; i += 1) {
+            var key = localStorage.key(i);
+            if (key && key.endsWith('.blog.v1')) {
+              raw = localStorage.getItem(key);
+              break;
+            }
+          }
+        }
+        var saved = JSON.parse(raw || 'null');
         var pref = saved && saved.ui && saved.ui.theme ? saved.ui.theme : 'system';
         var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         resolved = dark ? 'dark' : 'light';
@@ -73,9 +84,9 @@
     <aside class="sidebar" id="sidebar" aria-label="博客导航">
       <div class="brand-row">
         <button class="brand" id="brandHome" type="button" title="回到最近的文章">
-          <span class="brand-mark" aria-hidden="true">余</span>
+          <span class="brand-mark" aria-hidden="true">P</span>
           <span class="brand-copy">
-            <span class="brand-name">PM2496</span>
+            <span class="brand-name">Blog</span>
             <span class="brand-sub">WORDS IN MARGIN</span>
           </span>
         </button>
@@ -131,9 +142,9 @@
           <svg class="theme-icon-moon" aria-hidden="true"><use href="#i-moon"></use></svg>
         </button>
         <button class="author-card" id="authorBtn" type="button" aria-haspopup="menu" aria-expanded="false" title="博客与数据设置">
-          <span class="author-avatar" aria-hidden="true">林</span>
+          <span class="author-avatar" aria-hidden="true"></span>
           <span class="author-copy">
-            <strong>林白</strong>
+            <strong></strong>
             <span>写作者 · 杭州</span>
           </span>
           <svg class="author-more" aria-hidden="true"><use href="#i-more"></use></svg>
@@ -209,6 +220,7 @@
     <div class="noscript-card">这个博客需要 JavaScript 才能呈现文章与交互。请启用 JavaScript 后重新打开。</div>
   </noscript>
 
+  <script src="assets/site-config.js" defer></script>
   <script src="assets/data.js" defer></script>
   <script src="assets/app.js" defer></script>
 </body>

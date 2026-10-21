@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PM2496 · 个人博客
+   Blog · 个人博客
    A quiet, writing-first interface inspired by the DeepSeek Harness shell.
    ========================================================================== */
 
@@ -2113,6 +2113,41 @@ html[data-theme="dark"] .article-body blockquote {
   color: var(--text-3);
   font-size: 12.5px;
   line-height: 1.8;
+}
+
+.load-error-state p {
+  max-width: 520px;
+}
+
+.load-error-state .load-error-help {
+  margin-top: -4px;
+  max-width: 520px;
+}
+
+.load-error-state .load-error-help strong {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.load-error-path {
+  display: inline-block;
+  max-width: min(560px, 100%);
+  margin: -8px 0 18px;
+  padding: 6px 9px;
+  overflow-wrap: anywhere;
+  color: var(--text-2);
+  background: var(--code-inline);
+  border: 0.5px solid var(--border-2);
+  border-radius: 6px;
+  font-family: var(--font-code);
+  font-size: 10.5px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.new-article-btn:disabled {
+  opacity: 0.38;
+  pointer-events: none;
 }
 
 .primary-btn {

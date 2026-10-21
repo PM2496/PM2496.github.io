@@ -1,8 +1,10 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'yubai.blog.v1';
-  const APP_VERSION = '1.0.0';
+  const STORAGE_KEY = 'blog.content.v1';
+  const AUTHOR_NAME =
+    String((window.SITE_CONFIG && window.SITE_CONFIG.author) || '作者').trim() || '作者';
+  const APP_VERSION = '1.2.0';
   const SITE_TIME_ZONE = 'Asia/Shanghai';
   const FILTERS = {
     all: '全部文章',
@@ -67,6 +69,8 @@
   let previousRenderedArticleId = null;
   let storageWarningShown = false;
   let scrollFrame = 0;
+  let seedLoadError = '';
+  let seedSourcePath = '';
 
   const mediaDark = window.matchMedia
     ? window.matchMedia('(prefers-color-scheme: dark)')
@@ -120,6 +124,23 @@
 
   function validColor(value) {
     return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value).toLowerCase() : '';
+  }
+
+  function folderName(value, fallback) {
+    const cleaned = cleanText(value, 80)
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(/^[.\s]+|[.\s]+$/g, '');
+    return cleaned || fallback;
+  }
+
+  function simpleHash(value) {
+    let hash = 2166136261;
+    const text = String(value || '');
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
   }
 
   function dateValue(value, fallback) {
@@ -225,6 +246,7 @@
         name,
         color: validColor(item.color) || CATEGORY_COLORS[index % CATEGORY_COLORS.length],
         description: cleanText(item.description, 120),
+        folder: folderName(item.folder, id),
         createdAt: dateValue(item.createdAt, now)
       });
     });
@@ -270,36 +292,217 @@
     const seedSite = (window.SEED_DATA && window.SEED_DATA.site) || {};
     const rawSite = source.site && typeof source.site === 'object' ? source.site : {};
     const site = {
-      title: cleanText(rawSite.title, 24) || cleanText(seedSite.title, 24) || '余白',
+      title: cleanText(rawSite.title, 24) || cleanText(seedSite.title, 24) || 'Blog',
       subtitle: cleanText(rawSite.subtitle, 40) || cleanText(seedSite.subtitle, 40) || 'WORDS IN MARGIN',
       tagline: cleanText(rawSite.tagline, 120) || cleanText(seedSite.tagline, 120) || '把想法写下来，让时间慢一点。',
-      author: cleanText(rawSite.author, 24) || cleanText(seedSite.author, 24) || '林白',
+      author: AUTHOR_NAME,
       role: cleanText(rawSite.role, 40) || cleanText(seedSite.role, 40) || '写作者'
     };
+
+    const rawSeed = source.seed && typeof source.seed === 'object' ? source.seed : null;
+    const seed = rawSeed
+      ? {
+          signature: cleanText(rawSeed.signature, 80),
+          articleIds: Array.isArray(rawSeed.articleIds)
+            ? Array.from(
+                new Set(
+                  rawSeed.articleIds
+                    .map((id) => cleanText(id, 100))
+                    .filter(Boolean)
+                )
+              )
+            : [],
+          categoryIds: Array.isArray(rawSeed.categoryIds)
+            ? Array.from(
+                new Set(
+                  rawSeed.categoryIds
+                    .map((id) => cleanText(id, 80))
+                    .filter(Boolean)
+                )
+              )
+            : []
+        }
+      : null;
 
     return {
       version: 1,
       site,
       categories,
       articles,
-      ui: normalizeUi(source.ui, articles, categories)
+      ui: normalizeUi(source.ui, articles, categories),
+      seed
     };
   }
 
-  function createInitialState() {
-    return normalizeState(clone(window.SEED_DATA));
+  function seedFingerprint(seed) {
+    const source = seed && typeof seed === 'object' ? seed : {};
+    return simpleHash(
+      JSON.stringify({
+        site: source.site || {},
+        categories: Array.isArray(source.categories) ? source.categories : [],
+        articles: Array.isArray(source.articles) ? source.articles : []
+      })
+    );
   }
 
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return createInitialState();
-      const parsed = JSON.parse(raw);
-      return normalizeState(parsed);
-    } catch (error) {
-      console.warn('无法读取本地博客数据，已使用示例内容。', error);
-      return createInitialState();
+  function seedMetaFrom(seed, signature) {
+    const normalized = normalizeState(seed);
+    return {
+      signature,
+      articleIds: normalized.articles.map((article) => article.id),
+      categoryIds: normalized.categories.map((category) => category.id)
+    };
+  }
+
+  function createInitialState(seed, signature) {
+    const initial = normalizeState(seed);
+    initial.seed = seedMetaFrom(seed, signature);
+    return initial;
+  }
+
+  function mergeSeedWithLocal(local, seed, signature) {
+    const published = normalizeState(seed);
+    const publicArticleIds = new Set(published.articles.map((article) => article.id));
+    const publicCategoryIds = new Set(published.categories.map((category) => category.id));
+    const previousSeed = local.seed;
+    const baseArticleIds = new Set(
+      previousSeed && previousSeed.articleIds.length
+        ? previousSeed.articleIds
+        : Array.from(publicArticleIds)
+    );
+    const baseCategoryIds = new Set(
+      previousSeed && previousSeed.categoryIds.length
+        ? previousSeed.categoryIds
+        : Array.from(publicCategoryIds)
+    );
+
+    const localOnlyArticles = local.articles.filter((article) => {
+      if (publicArticleIds.has(article.id)) return false;
+      if (!baseArticleIds.has(article.id)) return true;
+      return Boolean(previousSeed) && article.status === 'draft';
+    });
+    const neededCategoryIds = new Set(localOnlyArticles.map((article) => article.categoryId));
+    const localOnlyCategories = local.categories.filter(
+      (category) =>
+        !publicCategoryIds.has(category.id) &&
+        (!baseCategoryIds.has(category.id) || neededCategoryIds.has(category.id))
+    );
+
+    const categories = published.categories.concat(localOnlyCategories);
+    const articles = published.articles.concat(localOnlyArticles);
+    const ui = Object.assign({}, local.ui);
+    if (!articles.some((article) => article.id === ui.activeArticleId)) {
+      ui.activeArticleId = articles.length ? articles[0].id : null;
     }
+    ui.collapsedCategoryIds = (ui.collapsedCategoryIds || []).filter((id) =>
+      categories.some((category) => category.id === id)
+    );
+
+    return normalizeState({
+      version: 1,
+      site: published.site,
+      categories,
+      articles,
+      ui,
+      seed: seedMetaFrom(seed, signature)
+    });
+  }
+
+  function readStoredStateRaw() {
+    try {
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current) return current;
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (!key || key === STORAGE_KEY || !key.endsWith('.blog.v1')) continue;
+        const legacy = localStorage.getItem(key);
+        if (!legacy) continue;
+        try {
+          localStorage.setItem(STORAGE_KEY, legacy);
+          localStorage.removeItem(key);
+        } catch (error) {}
+        return legacy;
+      }
+    } catch (error) {}
+    return null;
+  }
+
+  function loadState(seed) {
+    const signature = seedFingerprint(seed);
+    try {
+      const raw = readStoredStateRaw();
+      if (!raw) return { state: createInitialState(seed, signature), synced: false };
+      const parsed = JSON.parse(raw);
+      const local = normalizeState(parsed);
+      if (local.seed && local.seed.signature === signature) {
+        return { state: local, synced: false };
+      }
+      const merged = mergeSeedWithLocal(local, seed, signature);
+      return {
+        state: merged,
+        synced: Boolean(local.seed && local.seed.signature && local.seed.signature !== signature)
+      };
+    } catch (error) {
+      console.warn('无法读取本地博客数据，已使用内容文件。', error);
+      return { state: createInitialState(seed, signature), synced: false };
+    }
+  }
+
+  async function resolveSeedData() {
+    const configured = window.SEED_DATA;
+    if (configured && typeof configured === 'object') return configured;
+    if (typeof configured !== 'string' || !configured.trim()) {
+      throw new Error('assets/data.js 中没有提供内容对象或 JSON 文件路径。');
+    }
+
+    const configuredPath = configured.trim();
+    seedSourcePath = configuredPath;
+    let url;
+    try {
+      const dataScriptUrl = new URL('assets/data.js', document.baseURI);
+      url = new URL(configuredPath, dataScriptUrl);
+    } catch (error) {
+      throw new Error('JSON 文件路径格式不正确：' + configuredPath);
+    }
+    if (!['http:', 'https:', 'file:'].includes(url.protocol)) {
+      throw new Error('JSON 文件路径必须是相对路径或 HTTP(S) 地址。');
+    }
+    if (location.protocol !== 'file:' && url.protocol === 'file:') {
+      throw new Error('网页无法读取本机的 file:// 路径，请把 JSON 文件放进项目目录。');
+    }
+    url.searchParams.set('_', String(Date.now()));
+
+    let response;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      response = await fetch(url.toString(), { cache: 'no-store', signal: controller.signal });
+    } catch (error) {
+      if (location.protocol === 'file:') {
+        throw new Error('直接双击打开时浏览器会阻止读取外部 JSON，请通过本地服务器访问。');
+      }
+      if (error && error.name === 'AbortError') {
+        throw new Error('读取 JSON 文件超时，请检查路径与网络连接。');
+      }
+      throw new Error('无法读取 JSON 文件，请检查路径与网络连接。');
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!response.ok) {
+      throw new Error('读取 JSON 文件失败（HTTP ' + response.status + '）：' + configuredPath);
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      throw new Error('JSON 文件格式不正确，无法解析内容。');
+    }
+    if (!data || !Array.isArray(data.categories) || !Array.isArray(data.articles)) {
+      throw new Error('JSON 文件缺少 categories 或 articles 数组。');
+    }
+    window.SEED_DATA = data;
+    return data;
   }
 
   function saveState() {
@@ -350,7 +553,7 @@
       article.excerpt,
       article.tags.join(' '),
       category ? category.name : '',
-      article.content
+      expandContentMacros(article.content)
     ]
       .join('\n')
       .toLowerCase();
@@ -405,9 +608,10 @@
     const value = String(raw || '').trim().replace(/&amp;/g, '&');
     if (!value) return '#';
     if (/^(https?:|mailto:)/i.test(value)) return value;
-    if (/^#[A-Za-z0-9_-]+$/.test(value)) return value;
-    if (/^\.{0,2}\/[^\s]+$/.test(value) || /^assets\/[^\s]+$/i.test(value)) return value;
-    return '#';
+    if (value.startsWith('#')) return value;
+    if (value.startsWith('//')) return '#';
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return '#';
+    return value;
   }
 
   function inlineMarkdown(text) {
@@ -491,9 +695,16 @@
     return value.split('|').map((cell) => cell.trim());
   }
 
+  function expandContentMacros(value) {
+    return String(value == null ? '' : value).replace(
+      /\{\{\s*author\s*\}\}/gi,
+      AUTHOR_NAME
+    );
+  }
+
   function renderMarkdown(markdown, options) {
     const opts = options || {};
-    const lines = String(markdown == null ? '' : markdown).replace(/\r\n?/g, '\n').split('\n');
+    const lines = expandContentMacros(markdown).replace(/\r\n?/g, '\n').split('\n');
     const out = [];
     let i = 0;
     let paragraphCount = 0;
@@ -721,6 +932,8 @@
     if (authorName) authorName.textContent = site.author;
     if (authorRole) authorRole.textContent = site.role;
     if (authorAvatar) authorAvatar.textContent = site.author.slice(0, 1);
+    const authorMeta = $('meta[name="author"]');
+    if (authorMeta) authorMeta.content = site.author;
   }
 
   function updateHead(article) {
@@ -978,7 +1191,9 @@
     return (
       '<div class="article-foot"><div class="article-tags">' +
       tags +
-      '</div><div class="article-end-meta"><span class="article-end-mark" aria-hidden="true">余</span><span>约 ' +
+      '</div><div class="article-end-meta"><span class="article-end-mark" aria-hidden="true">' +
+      escapeHtml(Array.from(AUTHOR_NAME)[0] || '·') +
+      '</span><span>约 ' +
       formatNumber(stats.characters) +
       ' 字</span><span>' +
       stats.minutes +
@@ -1584,7 +1799,9 @@
         themeButton('light', '浅色', 'sun') +
         themeButton('dark', '深色', 'moon') +
         themeButton('system', '跟随系统', 'monitor') +
-        '</div></div><div class="settings-section"><div class="settings-section-label">文章数据</div><button class="popover-item" type="button" data-settings-action="export">' +
+        '</div></div><div class="settings-section"><div class="settings-section-label">文章数据</div><button class="popover-item" type="button" data-settings-action="export-categories">' +
+        icon('folder') +
+        '<span class="popover-item-label">导出分类配置</span><kbd>JSON</kbd></button><button class="popover-item" type="button" data-settings-action="export">' +
         icon('download') +
         '<span class="popover-item-label">导出全部文章</span><kbd>JSON</kbd></button><button class="popover-item" type="button" data-settings-action="import">' +
         icon('upload') +
@@ -1612,7 +1829,8 @@
       button.addEventListener('click', () => {
         const action = button.dataset.settingsAction;
         closePopover({ restoreFocus: true });
-        if (action === 'export') exportAll();
+        if (action === 'export-categories') exportCategoriesConfig();
+        else if (action === 'export') exportAll();
         else if (action === 'import') dom.importFile.click();
         else if (action === 'reset') resetDemo();
       });
@@ -1776,7 +1994,7 @@
       escapeAttr(editing ? editing.excerpt : '') +
       '" autocomplete="off"></label><div><span class="field-label">正文 <span class="optional">支持 Markdown</span></span><textarea class="field-textarea" id="editorContent" spellcheck="false" placeholder="从这里开始写…">' +
       escapeHtml(editing ? editing.content : '') +
-      '</textarea><div class="markdown-hint"><span><code>## 标题</code></span><span><code>**粗体**</code></span><span><code>&gt; 引用</code></span><span><code>`代码`</code></span><span><code>- 列表</code></span></div></div><p class="form-error" id="editorError" role="alert"></p></form>';
+      '</textarea><div class="markdown-hint"><span><code>## 标题</code></span><span><code>**粗体**</code></span><span><code>&gt; 引用</code></span><span><code>`代码`</code></span><span><code>- 列表</code></span><span><code>{{author}}</code> 作者名</span></div></div><p class="form-error" id="editorError" role="alert"></p></form>';
 
     const footer =
       '<span class="modal-foot-left" id="editorWordCount">约 0 字</span><div class="modal-actions"><button class="modal-btn" type="button" data-editor-cancel>取消</button><button class="modal-btn is-primary" type="button" data-editor-save>' +
@@ -1974,7 +2192,7 @@
       '</div></div><p class="form-error" id="categoryError" role="alert"></p></form>';
 
     const footer =
-      '<div class="modal-foot-left">分类会显示在左侧目录中</div><div class="modal-actions"><button class="modal-btn" type="button" data-category-cancel>取消</button><button class="modal-btn is-primary" type="button" data-category-save>' +
+      '<div class="modal-foot-left">发布分类样式：设置 → 导出分类配置</div><div class="modal-actions"><button class="modal-btn" type="button" data-category-cancel>取消</button><button class="modal-btn is-primary" type="button" data-category-save>' +
       (editing ? '保存修改' : '创建分类') +
       '</button></div>';
 
@@ -2037,18 +2255,20 @@
             editing.color = selectedColor;
             showToast('分类已更新', 'success');
           } else {
+            const categoryId = uid('category');
             const category = {
-              id: uid('category'),
+              id: categoryId,
               name,
               description,
               color: selectedColor,
+              folder: folderName(name, categoryId),
               createdAt: new Date().toISOString()
             };
             state.categories.push(category);
             state.ui.collapsedCategoryIds = state.ui.collapsedCategoryIds.filter(
               (id) => id !== category.id
             );
-            showToast('分类已创建', 'success');
+            showToast('分类已创建，可在设置中导出分类配置', 'success');
           }
           saveState();
           closeModal();
@@ -2137,6 +2357,7 @@
         name: '未分类',
         color: '#8b8f96',
         description: '暂时没有归类的文章。',
+        folder: folderName('未分类', 'uncategorized'),
         createdAt: new Date().toISOString()
       };
       state.categories.push(uncategorized);
@@ -2183,11 +2404,30 @@
     showToast('Markdown 文件已导出', 'success');
   }
 
+  function exportCategoriesConfig() {
+    const categories = state.categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      description: category.description,
+      folder: folderName(category.folder, category.id),
+      createdAt: category.createdAt
+    }));
+    downloadFile(
+      JSON.stringify(categories, null, 2) + '\n',
+      'categories.json',
+      'application/json;charset=utf-8'
+    );
+    showToast('分类配置已导出，上传到 data/categories.json 即可', 'success');
+  }
+
   function exportAll() {
+    const siteForExport = Object.assign({}, state.site);
+    delete siteForExport.author;
     const payload = {
       version: 1,
       exportedAt: new Date().toISOString(),
-      site: state.site,
+      site: siteForExport,
       categories: state.categories,
       articles: state.articles
     };
@@ -2198,7 +2438,7 @@
       String(date.getDate()).padStart(2, '0');
     downloadFile(
       JSON.stringify(payload, null, 2),
-      'yubai-backup-' + stamp + '.json',
+      'blog-backup-' + stamp + '.json',
       'application/json;charset=utf-8'
     );
     showToast('已导出全部文章与分类', 'success');
@@ -2391,6 +2631,7 @@
     const action = actionEl.dataset.action;
     const article = activeArticle();
     if (action === 'new-article') openArticleEditor();
+    else if (action === 'reload-page') location.reload();
     else if (action === 'copy-link' && article) {
       copyText(articleUrl(article.id), '文章链接已复制');
     } else if (action === 'copy-markdown' && article) {
@@ -2636,8 +2877,58 @@
      Boot
      ------------------------------------------------------------------------ */
 
-  function init() {
-    state = loadState();
+  function renderSeedLoadError(message) {
+    previousRenderedArticleId = null;
+    setTopbarEnabled(false);
+    dom.newArticleBtn.disabled = true;
+    dom.newCategoryBtn.disabled = true;
+    dom.readingChip.hidden = true;
+    dom.readerDockWrap.hidden = true;
+    dom.articleCount.textContent = '读取失败';
+    dom.categoryTree.innerHTML =
+      '<div class="tree-empty"><div class="tree-empty-icon">' +
+      icon('file') +
+      '</div><strong>内容目录未加载</strong><p>修复 assets/data.js 中的 JSON 路径后重新加载页面。</p></div>';
+    dom.breadcrumbs.innerHTML =
+      '<span class="crumb crumb-current">内容加载失败</span>';
+    dom.articleStage.innerHTML =
+      '<div class="empty-state load-error-state"><div class="empty-glyph">' +
+      icon('file') +
+      '</div><h2>没有读到内容文件</h2><p>' +
+      escapeHtml(message) +
+      '</p>' +
+      (seedSourcePath
+        ? '<code class="load-error-path">' + escapeHtml(seedSourcePath) + '</code>'
+        : '') +
+      '<p class="load-error-help">请确认 <strong>assets/data.js</strong> 中的路径相对于该文件所在目录正确，并且 JSON 文件已放入项目。通过本地服务器或 GitHub Pages 访问时才能自动读取外部 JSON。</p><button class="primary-btn" type="button" data-action="reload-page">' +
+      icon('reset') +
+      '<span>重新加载</span></button></div>';
+    updateHead(null);
+    updateReadingProgress();
+  }
+
+  async function init() {
+    try {
+      await resolveSeedData();
+    } catch (error) {
+      seedLoadError = error && error.message ? error.message : '未知错误';
+      console.error('内容文件加载失败：', error);
+      window.SEED_DATA = {
+        version: 1,
+        site: {
+          title: 'Blog',
+          subtitle: 'WORDS IN MARGIN',
+          tagline: '把想法写下来，让时间慢一点。',
+          author: AUTHOR_NAME,
+          role: '写作者'
+        },
+        categories: [],
+        articles: []
+      };
+    }
+
+    const loaded = loadState(window.SEED_DATA);
+    state = loaded.state;
     const hashId = hashArticleId();
     if (hashId && articleById(hashId)) {
       state.ui.activeArticleId = hashId;
@@ -2650,26 +2941,46 @@
     bindEvents();
     renderAll();
 
-    if (state.ui.activeArticleId) {
+    if (seedLoadError) {
+      renderSeedLoadError(seedLoadError);
+    } else {
+      saveState();
+      if (loaded.synced) {
+        showToast('已同步内容文件中的最新文章', 'success');
+      }
+    }
+
+    if (!seedLoadError && state.ui.activeArticleId) {
       if (location.hash !== '#/article/' + encodeURIComponent(state.ui.activeArticleId)) {
         setHash(state.ui.activeArticleId, true);
       }
-    } else if (location.hash) {
+    } else if (!seedLoadError && location.hash) {
       clearHash();
     }
 
     requestAnimationFrame(() => {
       updateReadingProgress();
-      dom.contentScroll.focus({ preventScroll: true });
+      if (!seedLoadError) dom.contentScroll.focus({ preventScroll: true });
     });
   }
 
-  window.YubaiBlog = {
+  window.BlogApp = {
     version: APP_VERSION,
     renderMarkdown,
     getState: () => clone(state),
-    exportAll
+    exportAll,
+    seedSourcePath: () => seedSourcePath
   };
 
-  init();
+  init().catch((error) => {
+    console.error('博客初始化失败：', error);
+    if (dom.articleStage) {
+      dom.articleStage.innerHTML =
+        '<div class="empty-state"><div class="empty-glyph">' +
+        icon('file') +
+        '</div><h2>博客初始化失败</h2><p>' +
+        escapeHtml(error && error.message ? error.message : '未知错误') +
+        '</p></div>';
+    }
+  });
 })();

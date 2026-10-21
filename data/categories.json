@@ -1,0 +1,42 @@
+[
+  {
+    "id": "tech",
+    "name": "技术随笔",
+    "color": "#4176e6",
+    "description": "关于代码、工具与产品，也关于它们如何影响人的日常。",
+    "folder": "tech",
+    "createdAt": "2026-01-02T01:00:00.000Z"
+  },
+  {
+    "id": "reading",
+    "name": "阅读札记",
+    "color": "#b06a3c",
+    "description": "读过的书，和留在页边的那些字。",
+    "folder": "reading",
+    "createdAt": "2026-01-03T01:00:00.000Z"
+  },
+  {
+    "id": "city",
+    "name": "城市漫游",
+    "color": "#2f8f6b",
+    "description": "走路时看见的细枝末节。",
+    "folder": "city",
+    "createdAt": "2026-01-04T01:00:00.000Z"
+  },
+  {
+    "id": "fragments",
+    "name": "片段",
+    "color": "#8a6bbe",
+    "description": "未完成的念头、草稿，以及暂时没有去处的话。",
+    "folder": "fragments",
+    "createdAt": "2026-01-05T01:00:00.000Z"
+  },
+  {
+    "id": "about",
+    "name": "关于",
+    "color": "#6b7280",
+    "description": "关于这个博客，以及写字的人。",
+    "folder": "about",
+    "createdAt": "2026-01-06T01:00:00.000Z"
+  }
+]
